@@ -124,7 +124,6 @@ impl<E: EventHandler> EventQueue<E> {
             let m = e.handle(counter);
 
             if let Some(event) = m {
-                self.event_hash_set.insert(event.clone());
                 self.insert(event);
             }
         }
@@ -135,7 +134,6 @@ impl<E: EventHandler> EventQueue<E> {
                 self.list.pop_front();
                 self.event_hash_set.remove(&head);
                 if let Some(event) = m {
-                    self.event_hash_set.insert(event.clone());
                     self.insert(event);
                 }
             } else {
@@ -169,6 +167,7 @@ impl<E: EventHandler> EventQueue<E> {
             }
             None => (),
         };
+        self.event_hash_set.insert(event.clone());
         cursor.insert_before(event);
     }
 }
