@@ -79,6 +79,7 @@ pub trait EventHandler: Clone + StorageData {
 pub struct EventQueue<T: EventHandler + Sized> {
     pub counter: u64,
     pub list: std::collections::LinkedList<T>,
+    pub event_hash_set: std::collections::HashSet<T>,
 }
 
 impl<E: EventHandler> EventQueue<E> {
@@ -86,6 +87,7 @@ impl<E: EventHandler> EventQueue<E> {
         EventQueue {
             counter: 0,
             list: LinkedList::new(),
+            event_hash_set: std::collections::HashSet::new(),
         }
     }
 
@@ -122,6 +124,7 @@ impl<E: EventHandler> EventQueue<E> {
             let m = e.handle(counter);
 
             if let Some(event) = m {
+                self.event_hash_set.insert(event.clone());
                 self.insert(event);
             }
         }
@@ -130,7 +133,9 @@ impl<E: EventHandler> EventQueue<E> {
             if head.get_delta() == 0 {
                 let m = head.handle(counter);
                 self.list.pop_front();
+                self.event_hash_set.remove(&head);
                 if let Some(event) = m {
+                    self.event_hash_set.insert(event.clone());
                     self.insert(event);
                 }
             } else {
@@ -139,6 +144,11 @@ impl<E: EventHandler> EventQueue<E> {
             }
         }
         self.counter += 1;
+    }
+
+    /// check if a event is in the event queue
+    pub fn check_event_in_queue(&self, event: E) -> bool {
+        self.event_hash_set.contains(event)
     }
 
     /// Insert a event into the event queue
@@ -159,7 +169,6 @@ impl<E: EventHandler> EventQueue<E> {
             }
             None => (),
         };
-
         cursor.insert_before(event);
     }
 }
@@ -172,7 +181,12 @@ impl<T: EventHandler + Sized> StorageData for EventQueue<T> {
     fn from_data(u64data: &mut IterMut<u64>) -> Self {
         let counter = *u64data.next().unwrap();
         let list = LinkedList::new();
-        EventQueue { counter, list }
+        let event_hash_set = std::collections::HashSet::new();
+        EventQueue {
+            counter,
+            list,
+            event_hash_set,
+        }
     }
 }
 
